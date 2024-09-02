@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Habit</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #currentDate {
+            font-size: 1.1em;
+            color: #020202;
+        }
+        h1 {
+            font-size: 2em;
+            color: #333;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+        .btn {
+            font-size: 1em;
+            border-radius: 5px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+        .message {
+            color: green;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #addUnitForm {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        #addUnitForm h3 {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <h1>Add New Habit</h1>
+            <div id="currentDate"></div>
+        </div>
+        <form id="habitForm">
+            <div class="form-group">
+                <label for="habitName">Habit Name</label>
+                <input type="text" id="habitName" name="habitName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="goal">Goal</label>
+                <input type="text" id="goal" name="goal" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="unit">Unit</label>
+                <select id="unit" name="unit" class="form-control" required>
+                    <option value="" disabled selected>Select Unit</option>
+                    <!-- Options will be added here by JavaScript -->
+                </select>
+                <button type="button" id="showAddUnitForm" class="btn btn-info mt-2">Add New Unit</button>
+            </div>
+            <div id="addUnitForm">
+                <h3>Add New Unit</h3>
+                <div class="form-group">
+                    <label for="newUnitName">Unit Name</label>
+                    <input type="text" id="newUnitName" class="form-control">
+                </div>
+                <button type="button" id="addUnitButton" class="btn btn-primary">Add Unit</button>
+                <button type="button" id="cancelAddUnitButton" class="btn btn-secondary">Cancel</button>
+            </div>
+            <div class="form-group">
+                <label for="frequency">Frequency</label>
+                <select id="frequency" name="frequency" class="form-control" required>
+                    <option value="" disabled selected>Select Frequency</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
+            <div id="daysInput" class="form-group" style="display: none;">
+                <label for="days">Number of Days</label>
+                <input type="number" id="days" name="days" class="form-control" min="1">
+            </div>
+            <input type="hidden" id="habitDate" name="habitDate">
+            <button type="submit" class="btn btn-primary">Add Habit</button>
+            <a href="view_habits.html" class="btn btn-secondary">View Habits</a>
+        </form>
+        <div id="habitMessage" class="message"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const unitSelect = document.getElementById('unit');
+        const addUnitForm = document.getElementById('addUnitForm');
+        const showAddUnitFormButton = document.getElementById('showAddUnitForm');
+        const addUnitButton = document.getElementById('addUnitButton');
+        const cancelAddUnitButton = document.getElementById('cancelAddUnitButton');
+        const habitForm = document.getElementById('habitForm');
+        const habitMessage = document.getElementById('habitMessage');
+        const frequencySelect = document.getElementById('frequency');
+        const daysInput = document.getElementById('daysInput');
+        const currentDateDiv = document.getElementById('currentDate');
+        const habitDateInput = document.getElementById('habitDate');
+
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const today = new Date();
+        const formattedDate = formatDate(today);
+        currentDateDiv.textContent = formattedDate;
+        habitDateInput.value = formattedDate;
+
+        function populateUnits() {
+            fetch('http://localhost:8080/api/units')
+                .then(response => response.json())
+                .then(units => {
+                    unitSelect.innerHTML = '<option value="" disabled selected>Select Unit</option>';
+                    units.forEach(unit => {
+                        const option = document.createElement('option');
+                        option.value = unit.unitId;
+                        option.textContent = unit.unitName;
+                        unitSelect.appendChild(option);
+                    });
+                    console.log("Units populated:", units);
+                })
+                .catch(error => {
+                    console.error('Error fetching units:', error);
+                    habitMessage.textContent = 'Error loading units. Please try again.';
+                });
+        }
+
+        populateUnits();
+
+        frequencySelect.addEventListener('change', function() {
+            if (this.value === 'weekly' || this.value === 'monthly' || this.value === 'yearly') {
+                daysInput.style.display = 'block';
+            } else {
+                daysInput.style.display = 'none';
+            }
+        });
+
+habitForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const days = document.getElementById('days').value;
+    const unitSelect = document.getElementById('unit');
+    const unitValue = unitSelect.value;
+    const unitText = unitSelect.options[unitSelect.selectedIndex].text;
+
+    console.log("Selected Unit Value:", unitValue);
+    console.log("Selected Unit Text:", unitText);
+
+    if (!unitValue || unitValue === "Select Unit") {
+        habitMessage.textContent = 'Please select a valid unit.';
+        return;
+    }
+
+    const formData = {
+        habitName: document.getElementById('habitName').value,
+        goal: document.getElementById('goal').value,
+        unit: unitValue,
+        unitName: unitText, // Add this line to include the unit name
+        frequency: document.getElementById('frequency').value,
+        date: habitDateInput.value,
+        days: days || ''
+    };
+
+    const frequencyWithDays = days ? `${days}/${formData.frequency}` : formData.frequency;
+
+    console.log("Form Data Being Sent:", { ...formData, frequency: frequencyWithDays });
+
+    fetch('http://localhost:8080/api/habit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ...formData, frequency: frequencyWithDays })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Network response was not ok. Status: ${response.status}, Text: ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        habitMessage.textContent = 'Habit added successfully!';
+        console.log("Server response:", data);
+        setTimeout(() => {
+            habitMessage.textContent = '';
+            habitForm.reset();
+            unitSelect.selectedIndex = 0; // Reset the unit select to default option
+        }, 2000);
+    })
+    .catch(error => {
+        habitMessage.textContent = `An error occurred: ${error.message}`;
+        console.error('Error details:', error);
+    });
+});
+
+        showAddUnitFormButton.addEventListener('click', function() {
+            addUnitForm.style.display = 'block';
+        });
+
+        addUnitButton.addEventListener('click', function() {
+            const newUnitName = document.getElementById('newUnitName').value;
+
+            if (!newUnitName.trim()) {
+                habitMessage.textContent = 'Please enter a unit name.';
+                return;
+            }
+
+            fetch('http://localhost:8080/api/units', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ unitName: newUnitName })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to add new unit');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("New unit added:", data);
+                addUnitForm.style.display = 'none';
+                document.getElementById('newUnitName').value = '';
+                habitMessage.textContent = 'New unit added successfully!';
+                populateUnits(); // Refresh the unit options
+            })
+            .catch(error => {
+                console.error('Error adding unit:', error);
+                habitMessage.textContent = 'Failed to add new unit. Please try again.';
+            });
+        });
+
+        cancelAddUnitButton.addEventListener('click', function() {
+            addUnitForm.style.display = 'none';
+            document.getElementById('newUnitName').value = '';
+        });
+    });
+    </script>
+</body>
+</html>

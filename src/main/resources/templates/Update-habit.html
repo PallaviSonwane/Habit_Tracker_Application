@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Habit</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Update Habit</h1>
+        <form id="update-form">
+            <div class="form-group">
+                <label for="habitName">Habit Name</label>
+                <input type="text" id="habitName" name="habitName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="goal">Goal</label>
+                <input type="text" id="goal" name="goal" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="unit">Unit</label>
+                <select id="unit" name="unit" class="form-control" required>
+                    <option value="" disabled selected>Select Unit</option>
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="frequency">Frequency</label>
+                <select id="frequency" name="frequency" class="form-control" required>
+                    <option value="" disabled selected>Select Frequency</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="index.html" class="btn btn-secondary">Back to List</a>
+        </form>
+    </div>
+    <script>
+       document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const habitId = urlParams.get('id');
+    
+    if (!habitId) {
+        showError('No habit ID provided in the URL. Please ensure you\'re accessing this page correctly.');
+        disableForm();
+        return;
+    }
+
+    fetch(`http://localhost:8080/api/habit/${habitId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(habit => {
+            document.querySelector('#habitName').value = habit.habitName || '';
+            document.querySelector('#goal').value = habit.goal || '';
+            document.querySelector('#unit').value = habit.unit || '';
+            document.querySelector('#frequency').value = habit.frequency || '';
+        })
+        .catch(error => {
+            showError(`An error occurred while fetching the habit data: ${error.message}`);
+            disableForm();
+        });
+
+    document.querySelector('#update-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const updatedHabit = {
+            habitName: document.querySelector('#habitName').value,
+            goal: document.querySelector('#goal').value,
+            unit: document.querySelector('#unit').value,
+            frequency: document.querySelector('#frequency').value
+        };
+
+        fetch(`http://localhost:8080/api/habit/${habitId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedHabit)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(message => {
+            showSuccess(message);
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        })
+        .catch(error => {
+            showError(`An error occurred while updating the habit: ${error.message}`);
+        });
+    });
+
+    function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger';
+        errorDiv.textContent = message;
+        document.querySelector('.container').prepend(errorDiv);
+    }
+
+    function showSuccess(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success';
+        successDiv.textContent = message;
+        document.querySelector('.container').prepend(successDiv);
+    }
+
+    function disableForm() {
+        const form = document.querySelector('#update-form');
+        const inputs = form.querySelectorAll('input, select, button');
+        inputs.forEach(input => input.disabled = true);
+    }
+});
+    </script>
+</body>
+</html>

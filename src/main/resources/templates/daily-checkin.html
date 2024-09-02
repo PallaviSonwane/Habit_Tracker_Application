@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Check-In</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .days-view {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .day-box {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .day-box.checked {
+            background-color: #d4edda;
+        }
+        .day-box:hover {
+            background-color: #e9ecef;
+            transform: scale(1.05);
+        }
+        .checkin-message {
+            color: green;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .habit-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .habit-list p {
+            font-size: 18px;
+            color: #212529;
+            background-color: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.3s, box-shadow 0.3s;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+        .habit-list p:hover {
+            background-color: #e9ecef;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        dialog {
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            width: 80%;
+            max-width: 400px;
+            background-color: #ffffff;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        dialog h5 {
+            margin-bottom: 1rem;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Habit Check-In</h1>
+        <!-- Calendar Navigation -->
+        <div class="calendar-nav">
+            <button id="prevWeek" class="btn btn-secondary">&laquo; Previous</button>
+            <span id="currentMonthYear">September 2024</span>
+            <button id="nextWeek" class="btn btn-secondary">Next &raquo;</button>
+        </div>
+        <!-- 7-Day View -->
+        <div class="days-view">
+            <div class="day-box" data-date="2024-09-01">1</div>
+            <div class="day-box" data-date="2024-09-02">2</div>
+            <div class="day-box" data-date="2024-09-03">3</div>
+            <div class="day-box" data-date="2024-09-04">4</div>
+            <div class="day-box" data-date="2024-09-05">5</div>
+            <div class="day-box" data-date="2024-09-06">6</div>
+            <div class="day-box" data-date="2024-09-07">7</div>
+        </div>
+        <div id="checkinMessage" class="checkin-message"></div>
+        <!-- Habit List -->
+        <div id="habitList" class="habit-list"></div>
+    </div>
+
+    <!-- Custom Dialog -->
+    <dialog id="habitDialog">
+        <h5>Habit Not Found</h5>
+        <p>No habit data available for the selected date.</p>
+        <button id="closeDialog" class="btn btn-secondary">Close</button>
+    </dialog>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dayBoxes = document.querySelectorAll('.day-box');
+    const checkinMessage = document.getElementById('checkinMessage');
+    const currentMonthYear = document.getElementById('currentMonthYear');
+    const prevWeekButton = document.getElementById('prevWeek');
+    const nextWeekButton = document.getElementById('nextWeek');
+    const habitDialog = document.getElementById('habitDialog');
+    const closeDialogButton = document.getElementById('closeDialog');
+    const habitList = document.getElementById('habitList');
+    
+    let currentDate = new Date();
+    
+    function updateMonthYearDisplay() {
+        const options = { year: 'numeric', month: 'long' };
+        currentMonthYear.textContent = currentDate.toLocaleDateString(undefined, options);
+    }
+    
+    function fetchHabits(date) {
+        fetch(`http://localhost:8080/api/habit/habits/date/${date}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP error! Status: ${response.status}, Details: ${text}`);
+                });
+            }
+            if (response.status === 204) {
+                habitDialog.showModal();
+                habitList.innerHTML = '<p>No habits found for this date.</p>';
+                return null;
+            }
+            return response.json();
+        })
+        .then(habits => {
+            console.log('Fetched habits:', habits); // Debugging log
+            if (habits && Array.isArray(habits)) {
+                habitList.innerHTML = habits.length > 0
+                    ? habits.map(habit => `<p>${habit.habitName}</p>`).join('')
+                    : '<p>No habits found for this date.</p>';
+            } else {
+                habitList.innerHTML = '<p>Unexpected data format received.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching habits:', error);
+            habitList.innerHTML = `<p>An error occurred: ${error.message}</p>`;
+        });
+    }
+    
+    dayBoxes.forEach(box => {
+        box.addEventListener('click', function() {
+            const date = this.getAttribute('data-date');
+            const isCheckedIn = this.classList.toggle('checked');
+            
+            // Send check-in status to the server
+            fetch('http://localhost:8080/api/habit/checkin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    date: date,
+                    checkedIn: isCheckedIn
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                checkinMessage.textContent = `Habit check-in updated for ${date}`;
+                setTimeout(() => {
+                    checkinMessage.textContent = '';
+                }, 2000);
+            });
+    
+            // Fetch habits for the selected date
+            fetchHabits(date);
+        });
+    });
+    
+    prevWeekButton.addEventListener('click', function() {
+        currentDate.setDate(currentDate.getDate() - 7);
+        updateDaysView();
+        updateMonthYearDisplay();
+    });
+    
+    nextWeekButton.addEventListener('click', function() {
+        currentDate.setDate(currentDate.getDate() + 7);
+        updateDaysView();
+        updateMonthYearDisplay();
+    });
+    
+    closeDialogButton.addEventListener('click', function() {
+        habitDialog.close();
+    });
+    
+    function updateDaysView() {
+        const firstDayOfWeek = new Date(currentDate);
+        firstDayOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+        dayBoxes.forEach((box, index) => {
+            const date = new Date(firstDayOfWeek);
+            date.setDate(firstDayOfWeek.getDate() + index);
+            box.textContent = date.getDate();
+            box.setAttribute('data-date', date.toISOString().split('T')[0]);
+            box.classList.remove('checked');
+        });
+    }
+    
+    updateMonthYearDisplay();
+    updateDaysView();
+});
+    </script>
+</body>
+</html>

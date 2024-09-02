@@ -1,0 +1,29 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+header {
+    background-color: #007bff;
+}
+
+#habit-form, #daily-check-in, #progress-tracking, #reviews, #motivation {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+#progress-info, #reviews-info, #quote {
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    border-radius: 4px;
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+#select-habit {
+    width: 100%;
+}

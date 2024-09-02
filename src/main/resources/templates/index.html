@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Habit Tracker - Welcome</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #3498db;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .feature-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .feature-item:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        a {
+            text-decoration: none;
+            color: #3498db;
+        }
+        .description {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Daily Habit Tracker</h1>
+    </header>
+
+    <div class="description">
+        <p>Build and maintain positive habits effortlessly. Track your progress, get motivated, and achieve your goals!</p>
+    </div>
+
+    <div class="feature-list">     
+        <a href="add-habit.html" class="feature-item">
+            <div class="feature-icon">➕</div>
+            <h2>Add New Habit</h2>
+            <p>Create a new habit to track</p>
+        </a>
+        <a href="view_habits.html" class="feature-item">
+            <div class="feature-icon">📊</div>
+            <h2>My Habits</h2>
+            <p>View and manage your habits</p>
+        </a>   
+        <a href="daily-checkin.html" class="feature-item">
+            <div class="feature-icon">✅</div>
+            <h2>Daily Check-in</h2>
+            <p>Mark your habits for today</p>
+        </a>
+        <a href="/progress" class="feature-item">
+            <div class="feature-icon">📈</div>
+            <h2>Progress Tracking</h2>
+            <p>See your habit completion rates</p>
+        </a>
+        <a href="/weekly-review" class="feature-item">
+            <div class="feature-icon">📅</div>
+            <h2>Weekly Review</h2>
+            <p>Get insights on your weekly performance</p>
+        </a>
+        <a href="/motivation" class="feature-item">
+            <div class="feature-icon">💪</div>
+            <h2>Motivation</h2>
+            <p>Daily quotes and tips</p>
+        </a>
+    </div>
+</body>
+</html>
