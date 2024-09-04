@@ -73,6 +73,12 @@
             background-color: #e9ecef;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
+        .habit-list a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            width: 100%;
+        }
         dialog {
             border: none;
             border-radius: 8px;
@@ -118,130 +124,189 @@
 
     <!-- Custom Dialog -->
     <dialog id="habitDialog">
-        <h5>Habit Not Found</h5>
-        <p>No habit data available for the selected date.</p>
+        <p>Nothing scheduled for this day.</p>
         <button id="closeDialog" class="btn btn-secondary">Close</button>
     </dialog>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const dayBoxes = document.querySelectorAll('.day-box');
-    const checkinMessage = document.getElementById('checkinMessage');
-    const currentMonthYear = document.getElementById('currentMonthYear');
-    const prevWeekButton = document.getElementById('prevWeek');
-    const nextWeekButton = document.getElementById('nextWeek');
-    const habitDialog = document.getElementById('habitDialog');
-    const closeDialogButton = document.getElementById('closeDialog');
-    const habitList = document.getElementById('habitList');
-    
-    let currentDate = new Date();
-    
-    function updateMonthYearDisplay() {
-        const options = { year: 'numeric', month: 'long' };
-        currentMonthYear.textContent = currentDate.toLocaleDateString(undefined, options);
-    }
-    
-    function fetchHabits(date) {
-        fetch(`http://localhost:8080/api/habit/habits/date/${date}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
+        document.addEventListener('DOMContentLoaded', function() {
+            const dayBoxes = document.querySelectorAll('.day-box');
+            const checkinMessage = document.getElementById('checkinMessage');
+            const currentMonthYear = document.getElementById('currentMonthYear');
+            const prevWeekButton = document.getElementById('prevWeek');
+            const nextWeekButton = document.getElementById('nextWeek');
+            const habitDialog = document.getElementById('habitDialog');
+            const closeDialogButton = document.getElementById('closeDialog');
+            const habitList = document.getElementById('habitList');
+            
+            let currentDate = new Date();
+            let selectedDate = '';
+            let highlightedDay = null; // Track the currently highlighted day
+            let habitIds = {}; // To store habit IDs for the selected date
+
+            function updateMonthYearDisplay() {
+                const options = { year: 'numeric', month: 'long' };
+                currentMonthYear.textContent = currentDate.toLocaleDateString(undefined, options);
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(`HTTP error! Status: ${response.status}, Details: ${text}`);
+
+            function fetchHabits(date) {
+                fetch(`http://localhost:8080/api/habit/habits/date/${date}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`HTTP error! Status: ${response.status}, Details: ${text}`);
+                        });
+                    }
+                    if (response.status === 204) {
+                        habitDialog.showModal();
+                        habitList.innerHTML = '<p>No habits found for this date.</p>';
+                        return null;
+                    }
+                    return response.json();
+                })
+                .then(habits => {
+                    console.log('Fetched habits:', habits); 
+                    if (habits && Array.isArray(habits)) {
+                        habitIds = {}; // Reset habit IDs
+                        habitList.innerHTML = habits.length > 0
+                            ? habits.map(habit => {
+                                habitIds[habit.habitId] = habit.habitName;
+                                return `
+                                    <a href="habit-details.html?habitId=${habit.habitId}" class="habit-item" data-habit-id="${habit.habitId}">
+                                        <p>${habit.habitName}</p>
+                                    </a>`;
+                            }).join('')
+                            : '<p>No habits found for this date.</p>';
+                    } else {
+                        habitList.innerHTML = '<p>Unexpected data format received.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching habits:', error);
+                    habitList.innerHTML = `<p>An error occurred: ${error.message}</p>`;
                 });
             }
-            if (response.status === 204) {
-                habitDialog.showModal();
-                habitList.innerHTML = '<p>No habits found for this date.</p>';
-                return null;
-            }
-            return response.json();
-        })
-        .then(habits => {
-            console.log('Fetched habits:', habits); // Debugging log
-            if (habits && Array.isArray(habits)) {
-                habitList.innerHTML = habits.length > 0
-                    ? habits.map(habit => `<p>${habit.habitName}</p>`).join('')
-                    : '<p>No habits found for this date.</p>';
-            } else {
-                habitList.innerHTML = '<p>Unexpected data format received.</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching habits:', error);
-            habitList.innerHTML = `<p>An error occurred: ${error.message}</p>`;
-        });
-    }
-    
-    dayBoxes.forEach(box => {
-        box.addEventListener('click', function() {
-            const date = this.getAttribute('data-date');
-            const isCheckedIn = this.classList.toggle('checked');
-            
-            // Send check-in status to the server
-            fetch('http://localhost:8080/api/habit/checkin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    date: date,
-                    checkedIn: isCheckedIn
+
+            function sendHabitEntry(habitId, value = 0, date) {
+                console.log(`Sending habit entry for habitId: ${habitId}, date: ${date}`);
+
+                fetch('http://localhost:8080/api/habit-entries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        habitId: habitId,
+                        value: value,
+                        date: date
+                    })
                 })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                checkinMessage.textContent = `Habit check-in updated for ${date}`;
-                setTimeout(() => {
-                    checkinMessage.textContent = '';
-                }, 2000);
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Habit entry created:', data);
+                    checkinMessage.textContent = `Habit entry created for habit ID ${habitId} on ${date}`;
+                    setTimeout(() => {
+                        checkinMessage.textContent = '';
+                    }, 2000);
+                })
+                .catch(error => {
+                    console.error('Error creating habit entry:', error);
+                    checkinMessage.textContent = `An error occurred: ${error.message}`;
+                });
+            }
+
+            dayBoxes.forEach(box => {
+                box.addEventListener('click', function() {
+                    selectedDate = this.getAttribute('data-date');
+                    
+                    // Remove 'checked' class from the previously highlighted day
+                    if (highlightedDay && highlightedDay !== this) {
+                        highlightedDay.classList.remove('checked');
+                    }
+                    
+                    // Toggle 'checked' class on the clicked day
+                    this.classList.toggle('checked');
+                    highlightedDay = this.classList.contains('checked') ? this : null;
+                    
+                    // Send check-in status to the server
+                    fetch('http://localhost:8080/api/habit/checkin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            date: selectedDate,
+                            checkedIn: this.classList.contains('checked')
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        checkinMessage.textContent = `Habit check-in updated for ${selectedDate}`;
+                        setTimeout(() => {
+                            checkinMessage.textContent = '';
+                        }, 2000);
+                    });
+
+                    fetchHabits(selectedDate);
+                });
             });
-    
-            // Fetch habits for the selected date
-            fetchHabits(date);
+
+            habitList.addEventListener('click', function(event) {
+                if (event.target.tagName === 'P') {
+                    const habitId = event.target.parentElement.getAttribute('data-habit-id');
+                    if (habitId) {
+                        sendHabitEntry(habitId, 0, selectedDate);
+                    }
+                }
+            });
+
+            prevWeekButton.addEventListener('click', function() {
+                currentDate.setDate(currentDate.getDate() - 7);
+                updateDaysView();
+                updateMonthYearDisplay();
+            });
+
+            nextWeekButton.addEventListener('click', function() {
+                currentDate.setDate(currentDate.getDate() + 7);
+                updateDaysView();
+                updateMonthYearDisplay();
+            });
+
+            closeDialogButton.addEventListener('click', function() {
+                habitDialog.close();
+            });
+
+            function updateDaysView() {
+                const firstDayOfWeek = new Date(currentDate);
+                firstDayOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+                dayBoxes.forEach((box, index) => {
+                    const date = new Date(firstDayOfWeek);
+                    date.setDate(firstDayOfWeek.getDate() + index);
+                    box.textContent = date.getDate();
+                    box.setAttribute('data-date', date.toISOString().split('T')[0]);
+                    box.classList.remove('checked'); // Ensure no days are checked initially
+                });
+                highlightedDay = null; 
+            }
+
+            updateMonthYearDisplay();
+            updateDaysView();
         });
-    });
-    
-    prevWeekButton.addEventListener('click', function() {
-        currentDate.setDate(currentDate.getDate() - 7);
-        updateDaysView();
-        updateMonthYearDisplay();
-    });
-    
-    nextWeekButton.addEventListener('click', function() {
-        currentDate.setDate(currentDate.getDate() + 7);
-        updateDaysView();
-        updateMonthYearDisplay();
-    });
-    
-    closeDialogButton.addEventListener('click', function() {
-        habitDialog.close();
-    });
-    
-    function updateDaysView() {
-        const firstDayOfWeek = new Date(currentDate);
-        firstDayOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-        dayBoxes.forEach((box, index) => {
-            const date = new Date(firstDayOfWeek);
-            date.setDate(firstDayOfWeek.getDate() + index);
-            box.textContent = date.getDate();
-            box.setAttribute('data-date', date.toISOString().split('T')[0]);
-            box.classList.remove('checked');
-        });
-    }
-    
-    updateMonthYearDisplay();
-    updateDaysView();
-});
-    </script>
+    </script>    
 </body>
 </html>

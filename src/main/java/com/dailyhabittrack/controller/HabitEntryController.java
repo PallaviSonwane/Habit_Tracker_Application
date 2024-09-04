@@ -1,22 +1,25 @@
 package com.dailyhabittrack.controller;
 
+import com.dailyhabittrack.constant.enums.HabitResponseMessage;
+import com.dailyhabittrack.entity.HabitsHabitEntryJoin;
+import com.dailyhabittrack.request.HabitEntryRequest;
+import com.dailyhabittrack.response.HabitEntryResponse;
+import com.dailyhabittrack.service.HabitEntryService;
+import jakarta.validation.Valid;
+
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.dailyhabittrack.constant.enums.HabitEntryResponseMessage;
-import com.dailyhabittrack.request.HabitEntryRequest;
-import com.dailyhabittrack.response.HabitEntryResponse;
-import com.dailyhabittrack.service.HabitEntryService;
-
-import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/habit-entry")
+@RequestMapping("/api/habit-entries")
 @CrossOrigin(origins = "*")
 public class HabitEntryController {
+
     private static final Logger logger = LoggerFactory.getLogger(HabitEntryController.class);
 
     private final HabitEntryService habitEntryService;
@@ -26,44 +29,41 @@ public class HabitEntryController {
     }
 
     @PostMapping
-    public ResponseEntity<HabitEntryResponse> createHabitEntry(@Valid @RequestBody HabitEntryRequest habitEntryRequest) {
-        logger.info("Habit entry create request received: {}", habitEntryRequest);
-        HabitEntryResponse creationResponse = habitEntryService.createHabitEntry(habitEntryRequest);
-        logger.info("Habit entry created: {}", creationResponse);
-        return ResponseEntity.status(HttpStatus.CREATED).body(creationResponse);
+    public ResponseEntity<HabitEntryResponse> createHabitEntry(@Valid @RequestBody HabitEntryRequest request) {
+        logger.info("Habit Entry create request received: {}", request);
+        HabitEntryResponse response = habitEntryService.createHabitEntry(request);
+        logger.info("Habit Entry created: {}", response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/habit-entries")
-    public ResponseEntity<List<HabitEntryResponse>> getAllHabitEntries() {
-        List<HabitEntryResponse> habitEntryList = habitEntryService.getAllHabitEntries();
-        logger.info("Habit entry information fetched for all entries: {}", habitEntryList);
-        return ResponseEntity.ok(habitEntryList);
-    }
-
-    @GetMapping("/{entry-id}")
-    public ResponseEntity<HabitEntryResponse> getHabitEntry(@PathVariable("entry-id") Long entryId) {
-        logger.info("Fetching habit entry data for entry id: {}", entryId);
-        HabitEntryResponse habitEntryData = habitEntryService.getHabitEntry(entryId);
-        logger.info("Habit entry data fetched for entry id: {}", entryId);
-        return ResponseEntity.ok(habitEntryData); 
-    }
-
-    @PutMapping("/{entry-id}")
-    public ResponseEntity<String> updateHabitEntry(@Valid @PathVariable("entry-id") Long entryId,
-                                                   @RequestBody HabitEntryRequest updatedHabitEntry) {
-        logger.info("Habit entry update request received for entry id {} with details: {}", entryId, updatedHabitEntry);
-        habitEntryService.updateHabitEntry(updatedHabitEntry, entryId);
-        logger.info("Habit entry updated for entry id: {}", entryId);
-        return ResponseEntity.ok()
-                .body(HabitEntryResponseMessage.HABIT_ENTRY_SUCCESSFULLY_UPDATED.getMessage(entryId));
-    }
+    // @GetMapping("/habit/{habit-id}")
+    // public ResponseEntity<List<HabitEntryResponse>> getEntriesByHabitId(@PathVariable("habit-id") Long habitId) {
+    //     logger.info("Fetching Habit Entries for habit id: {}", habitId);
+    //     List<HabitEntryResponse> entries = habitEntryService.getEntriesByHabitId(habitId);
+    //     logger.info("Fetched Habit Entries for habit id: {}", habitId);
+    //     return ResponseEntity.ok(entries);
+    // }
 
     @DeleteMapping("/{entry-id}")
     public ResponseEntity<String> deleteHabitEntry(@PathVariable("entry-id") Long entryId) {
-        logger.info("Habit entry delete request received for entry id: {}", entryId);
+        logger.info("Delete request for Habit Entry id: {}", entryId);
         habitEntryService.deleteHabitEntry(entryId);
-        logger.info("Habit entry deleted for entry id: {}", entryId);
-        return ResponseEntity.ok()
-                .body(HabitEntryResponseMessage.HABIT_ENTRY_SUCCESSFULLY_DELETED.getMessage(entryId));
+        logger.info("Habit Entry deleted for id: {}", entryId);
+        return ResponseEntity.ok(HabitResponseMessage.HABIT_SUCCESSFULLY_DELETED.getMessage(entryId));
+    }
+
+    @PutMapping("/habit-entries")
+    public ResponseEntity<Void> updateHabitEntry(@RequestBody HabitEntryRequest updateRequest) {
+        try {
+            habitEntryService.updateHabitValue(updateRequest.getHabitId(), updateRequest.getValue());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/all/{habitId}")
+    public List<HabitsHabitEntryJoin> getHabitEntriesByHabitId(@PathVariable Long habitId) {
+        return habitEntryService.getHabitEntriesByHabitId(habitId);
     }
 }

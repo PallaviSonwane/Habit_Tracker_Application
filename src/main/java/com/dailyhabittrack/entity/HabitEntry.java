@@ -1,6 +1,6 @@
 package com.dailyhabittrack.entity;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,7 +37,6 @@ public class HabitEntry {
     @Column(name = "value", nullable = false)
     private Integer value;
 
-    @Column(columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP", name = "tistmp", insertable = false, updatable = false)
-    private LocalDateTime timestamp;
+    private LocalDate date;
 
 }

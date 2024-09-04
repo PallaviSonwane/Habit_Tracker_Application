@@ -19,7 +19,7 @@ public enum UnitResponseMessage {
         return message;
     }
 
-    public String getMessage(Long entryId) {
-        return String.format(message, entryId);
+    public String getMessage(Long unitId) {
+        return String.format(message, unitId);
     }
 }

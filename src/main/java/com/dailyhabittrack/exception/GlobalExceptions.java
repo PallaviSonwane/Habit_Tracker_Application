@@ -60,4 +60,14 @@ public class GlobalExceptions {
         return new ResponseEntity<>(errorResponse, exception.getStatus());
     }
 
+    @ExceptionHandler(HabitEntryAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleHabitEntryAlreadyExistsException(HabitEntryAlreadyExistsException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.CONFLICT.value(), 
+            ex.getMessage(),             
+            HttpStatus.CONFLICT         
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+    
 }

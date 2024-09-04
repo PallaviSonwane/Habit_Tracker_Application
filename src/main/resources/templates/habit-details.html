@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Details</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        .habit-details {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .habit-details h2 {
+            margin-bottom: 20px;
+        }
+        .value-container {
+            display: flex;
+            align-items: center;
+        }
+        .value-container span {
+            margin-right: 10px;
+            font-size: 1.25em;
+        }
+        .value-container button {
+            font-size: 0.8em;
+            padding: 2px 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Habit Details</h1>
+        <div id="habitDetails" class="habit-details">
+            <!-- Details will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const habitDetailsDiv = document.getElementById('habitDetails');
+            const urlParams = new URLSearchParams(window.location.search);
+            const habitId = urlParams.get('habitId');
+
+            if (!habitId) {
+                habitDetailsDiv.innerHTML = '<p>Habit ID not provided.</p>';
+                return;
+            }
+
+            fetch(`http://localhost:8080/api/habit-entries/all/${habitId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`HTTP error! Status: ${response.status}, Details: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(habitDetails => {
+                if (Array.isArray(habitDetails) && habitDetails.length > 0) {
+                    const habit = habitDetails[0];
+                    habitDetailsDiv.innerHTML = `
+                        <h2>${habit.habitName}</h2>
+                        <p><strong>Goal:</strong> ${habit.goal}</p>
+                        <p><strong>Unit:</strong> ${habit.unitName}</p>
+                        <p><strong>Frequency:</strong> ${habit.frequency}</p>
+                        <p><strong>Value:</strong> 
+                            <span id="habitValue">${habit.value}</span>
+                            <button id="updateValue" class="btn btn-sm btn-outline-primary">Update</button>
+                        </p>
+                    `;
+                    document.getElementById('updateValue').addEventListener('click', function() {
+                        const newValue = prompt('Enter new value:', habit.value);
+                        if (newValue !== null) {
+                            updateHabitValue(habitId, newValue);
+                        }
+                    });
+                } else {
+                    habitDetailsDiv.innerHTML = '<p>No details found for this habit.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching habit details:', error);
+                habitDetailsDiv.innerHTML = `<p>An error occurred: ${error.message}</p>`;
+            });
+
+            function updateHabitValue(habitId, value) {
+                fetch('http://localhost:8080/api/habit-entries', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        habitId: habitId,
+                        value: value
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('habitValue').textContent = value;
+                })
+                .catch(error => {
+                    console.error('Error updating habit value:', error);
+                    alert(`An error occurred: ${error.message}`);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
