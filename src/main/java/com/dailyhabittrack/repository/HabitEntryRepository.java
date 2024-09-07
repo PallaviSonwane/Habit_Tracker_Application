@@ -27,4 +27,6 @@ public interface HabitEntryRepository extends JpaRepository<HabitEntry, Long> {
 
     @Query("SELECT he FROM HabitEntry he WHERE he.habitId = :habitId")
     HabitEntry findByHabitId(@Param("habitId") Long habitId);
+
+    HabitEntry findByHabitIdAndDate(Long habitId, LocalDate date);
 }

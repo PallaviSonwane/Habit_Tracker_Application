@@ -86,10 +86,11 @@ public class HabitEntryServiceImpl implements HabitEntryService {
     @Override
     public HabitEntryResponse updateHabitValue(HabitEntryRequest updEntryRequest) {
         HabitEntry habitEntry = HabitEntryMapper.INSTANCE.habitEntryRequestToEntity(updEntryRequest);
-        boolean entryExists = habitEntryRepository.existsByHabitIdAndDate(habitEntry.getHabitId(), habitEntry.getDate());
-
-        if (entryExists) {
-            habitEntry.setValue(habitEntry.getValue());
+        HabitEntry entryExists = habitEntryRepository.findByHabitIdAndDate(habitEntry.getHabitId(), habitEntry.getDate());
+        if (entryExists!=null) {
+            habitEntry.setEntryId(entryExists.getEntryId());
+            habitEntry.setDate(entryExists.getDate());
+            habitEntry.setHabitId(entryExists.getHabitId());
             HabitEntry updatedHabitEntry = habitEntryRepository.save(habitEntry);
             logger.info("Habit entry successfully updated");
             return HabitEntryMapper.INSTANCE.habitEntryToResponse(updatedHabitEntry);

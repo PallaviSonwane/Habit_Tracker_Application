@@ -29,14 +29,26 @@
         .value-container {
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
         }
         .value-container span {
-            margin-right: 10px;
-            font-size: 1.25em;
+            font-size: 1.5em;
         }
-        .value-container button {
-            font-size: 0.8em;
-            padding: 2px 8px;
+        .value-controls {
+            display: flex;
+            align-items: center;
+        }
+        .value-controls button {
+            font-size: 1.2em;
+            margin: 0 5px;
+            padding: 5px 10px;
+        }
+        .date-section {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #495057;
         }
     </style>
 </head>
@@ -84,17 +96,23 @@
                         <p><strong>Goal:</strong> ${habit.goal}</p>
                         <p><strong>Unit:</strong> ${habit.unitName}</p>
                         <p><strong>Frequency:</strong> ${habit.frequency}</p>
-                        <p><strong>Date:</strong> ${date}</p>
-                        <p><strong>Value:</strong> 
+                        <p class="date-section"><strong>Date:</strong> ${date}</p>
+                        <div class="value-container">
                             <span id="habitValue">${habit.value}</span>
-                            <button id="updateValue" class="btn btn-sm btn-outline-primary">Update</button>
-                        </p>
+                            <div class="value-controls">
+                                <button id="decreaseValue" class="btn btn-outline-secondary">&#9664;</button>
+                                <button id="increaseValue" class="btn btn-outline-secondary">&#9654;</button>
+                            </div>
+                        </div>
                     `;
 
-                    document.getElementById('updateValue').addEventListener('click', function() {
-                        const newValue = prompt('Enter new value:', habit.value);
-                        if (newValue !== null) {
-                            updateHabitValue(habitId, parseInt(newValue), date);
+                    document.getElementById('increaseValue').addEventListener('click', function() {
+                        updateHabitValue(habitId, habit.value + 1, date);
+                    });
+
+                    document.getElementById('decreaseValue').addEventListener('click', function() {
+                        if (habit.value > 0) {
+                            updateHabitValue(habitId, habit.value - 1, date);
                         }
                     });
                 } else {

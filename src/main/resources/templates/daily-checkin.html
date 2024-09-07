@@ -192,7 +192,7 @@
                 });
             }
 
-            function sendHabitEntry(habitId, value = 0, date) {
+            function sendHabitEntry(habitId, date) {
                 console.log(`Sending habit entry for habitId: ${habitId}, date: ${date}`);
 
                 fetch('http://localhost:8080/api/habit-entries', {
@@ -202,7 +202,7 @@
                     },
                     body: JSON.stringify({
                         habitId: habitId,
-                        value: value,
+                        value: 0, // Default value
                         date: date
                     })
                 })
@@ -218,6 +218,9 @@
                     setTimeout(() => {
                         checkinMessage.textContent = '';
                     }, 2000);
+
+                    // Redirect to habit-details page
+                    window.location.href = `habit-details.html?habitId=${encodeURIComponent(habitId)}&date=${encodeURIComponent(date)}`;
                 })
                 .catch(error => {
                     console.error('Error creating habit entry:', error);
@@ -264,6 +267,14 @@
 
                     fetchHabits(selectedDate);
                 });
+            });
+
+            habitList.addEventListener('click', function(event) {
+                const target = event.target.closest('.habit-item');
+                if (target) {
+                    const habitId = target.getAttribute('data-habit-id');
+                    sendHabitEntry(habitId, selectedDate);
+                }
             });
 
             prevWeekButton.addEventListener('click', function() {
