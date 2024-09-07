@@ -12,11 +12,9 @@ public interface HabitEntryService {
 
     HabitEntryResponse getHabitEntryById(Long entryId);
 
-    //List<HabitEntryResponse> getEntriesByHabitId(Long habitId);
-
     void deleteHabitEntry(Long entryId);
 
-    void updateHabitValue(Long habitId, Integer value);
+    HabitEntryResponse updateHabitValue(HabitEntryRequest upEntryRequest);
 
     List<HabitsHabitEntryJoin> getHabitEntriesByHabitId(Long habitId);
 }

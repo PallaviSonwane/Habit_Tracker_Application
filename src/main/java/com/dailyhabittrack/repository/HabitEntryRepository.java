@@ -13,8 +13,6 @@ import com.dailyhabittrack.entity.HabitsHabitEntryJoin;
 @Repository
 public interface HabitEntryRepository extends JpaRepository<HabitEntry, Long> {
 
-    // List<HabitEntry> findByHabitId(Long habitId);
-
     boolean existsByHabitId(Long habitId);
 
     boolean existsByDate(LocalDate date);
@@ -22,7 +20,7 @@ public interface HabitEntryRepository extends JpaRepository<HabitEntry, Long> {
     boolean existsByHabitIdAndDate(Long habitId, LocalDate date);
 
     @Query("SELECT new com.dailyhabittrack.entity.HabitsHabitEntryJoin(" +
-            "h.habitId, h.habitName, h.goal, h.unitName, h.frequency, he.value) " +
+            "h.habitId, h.habitName, h.goal, h.unitName, h.frequency, he.date, he.value) " +
             "FROM Habit h JOIN HabitEntry he ON h.habitId = he.habitId " +
             "WHERE h.habitId = :habitId")
     List<HabitsHabitEntryJoin> findHabitEntriesByHabitId(@Param("habitId") Long habitId);

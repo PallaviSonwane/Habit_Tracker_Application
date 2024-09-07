@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/habit-entries")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://127.0.0.1:5500")
 public class HabitEntryController {
 
     private static final Logger logger = LoggerFactory.getLogger(HabitEntryController.class);
@@ -36,14 +36,6 @@ public class HabitEntryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // @GetMapping("/habit/{habit-id}")
-    // public ResponseEntity<List<HabitEntryResponse>> getEntriesByHabitId(@PathVariable("habit-id") Long habitId) {
-    //     logger.info("Fetching Habit Entries for habit id: {}", habitId);
-    //     List<HabitEntryResponse> entries = habitEntryService.getEntriesByHabitId(habitId);
-    //     logger.info("Fetched Habit Entries for habit id: {}", habitId);
-    //     return ResponseEntity.ok(entries);
-    // }
-
     @DeleteMapping("/{entry-id}")
     public ResponseEntity<String> deleteHabitEntry(@PathVariable("entry-id") Long entryId) {
         logger.info("Delete request for Habit Entry id: {}", entryId);
@@ -52,15 +44,14 @@ public class HabitEntryController {
         return ResponseEntity.ok(HabitResponseMessage.HABIT_SUCCESSFULLY_DELETED.getMessage(entryId));
     }
 
-    @PutMapping("/habit-entries")
-    public ResponseEntity<Void> updateHabitEntry(@RequestBody HabitEntryRequest updateRequest) {
-        try {
-            habitEntryService.updateHabitValue(updateRequest.getHabitId(), updateRequest.getValue());
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @PutMapping("/entry-update")
+    public ResponseEntity<HabitEntryResponse> updateHabitEntry(@RequestBody HabitEntryRequest updateRequest) {
+        logger.info("Update request for Habit Entry id: {}", updateRequest);
+        HabitEntryResponse updatedEntry = habitEntryService.updateHabitValue(updateRequest);
+        logger.info("Habit Entry updated for id: {}", updatedEntry);
+        return ResponseEntity.ok(updatedEntry);
     }
+    
 
     @GetMapping("/all/{habitId}")
     public List<HabitsHabitEntryJoin> getHabitEntriesByHabitId(@PathVariable Long habitId) {

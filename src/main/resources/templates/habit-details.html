@@ -53,9 +53,12 @@
             const habitDetailsDiv = document.getElementById('habitDetails');
             const urlParams = new URLSearchParams(window.location.search);
             const habitId = urlParams.get('habitId');
+            const date = urlParams.get('date');
 
-            if (!habitId) {
-                habitDetailsDiv.innerHTML = '<p>Habit ID not provided.</p>';
+            console.log(`Habit ID: ${habitId}, Date: ${date}`);
+
+            if (!habitId || !date) {
+                habitDetailsDiv.innerHTML = '<p>Habit ID or Date not provided.</p>';
                 return;
             }
 
@@ -81,15 +84,17 @@
                         <p><strong>Goal:</strong> ${habit.goal}</p>
                         <p><strong>Unit:</strong> ${habit.unitName}</p>
                         <p><strong>Frequency:</strong> ${habit.frequency}</p>
+                        <p><strong>Date:</strong> ${date}</p>
                         <p><strong>Value:</strong> 
                             <span id="habitValue">${habit.value}</span>
                             <button id="updateValue" class="btn btn-sm btn-outline-primary">Update</button>
                         </p>
                     `;
+
                     document.getElementById('updateValue').addEventListener('click', function() {
                         const newValue = prompt('Enter new value:', habit.value);
                         if (newValue !== null) {
-                            updateHabitValue(habitId, newValue);
+                            updateHabitValue(habitId, parseInt(newValue), date);
                         }
                     });
                 } else {
@@ -101,20 +106,23 @@
                 habitDetailsDiv.innerHTML = `<p>An error occurred: ${error.message}</p>`;
             });
 
-            function updateHabitValue(habitId, value) {
-                fetch('http://localhost:8080/api/habit-entries', {
+            function updateHabitValue(habitId, value, date) {
+                fetch('http://localhost:8080/api/habit-entries/entry-update', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         habitId: habitId,
+                        date: date,
                         value: value
                     })
                 })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
+                        return response.text().then(text => {
+                            throw new Error(`HTTP error! Status: ${response.status}, Details: ${text}`);
+                        });
                     }
                     return response.json();
                 })

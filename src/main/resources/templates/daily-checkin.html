@@ -177,7 +177,7 @@
                             ? habits.map(habit => {
                                 habitIds[habit.habitId] = habit.habitName;
                                 return `
-                                    <a href="habit-details.html?habitId=${habit.habitId}" class="habit-item" data-habit-id="${habit.habitId}">
+                                    <a href="habit-details.html?habitId=${encodeURIComponent(habit.habitId)}&date=${encodeURIComponent(selectedDate)}" class="habit-item" data-habit-id="${habit.habitId}">
                                         <p>${habit.habitName}</p>
                                     </a>`;
                             }).join('')
@@ -264,15 +264,6 @@
 
                     fetchHabits(selectedDate);
                 });
-            });
-
-            habitList.addEventListener('click', function(event) {
-                if (event.target.tagName === 'P') {
-                    const habitId = event.target.parentElement.getAttribute('data-habit-id');
-                    if (habitId) {
-                        sendHabitEntry(habitId, 0, selectedDate);
-                    }
-                }
             });
 
             prevWeekButton.addEventListener('click', function() {
