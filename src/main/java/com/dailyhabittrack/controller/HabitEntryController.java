@@ -8,6 +8,7 @@ import com.dailyhabittrack.service.HabitEntryService;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,4 +58,15 @@ public class HabitEntryController {
     public List<HabitsHabitEntryJoin> getHabitEntriesByHabitId(@PathVariable Long habitId) {
         return habitEntryService.getHabitEntriesByHabitId(habitId);
     }
+
+    @GetMapping("/{date}")
+    public List<HabitsHabitEntryJoin> getHabitEntriesByDate(@PathVariable LocalDate date) {
+        return habitEntryService.getHabitEntriesByDate(date);
+    }
+
+    // @GetMapping("/{date}")
+    // public HabitsHabitEntryJoin getHabitEntriesByDateAndHabitId(@PathVariable LocalDate date,Long habitId) {
+    //     return habitEntryService.getHabitEntriesByDateAndHabitId(date,habitId);
+    // }
+
 }

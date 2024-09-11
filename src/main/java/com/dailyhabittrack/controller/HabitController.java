@@ -2,9 +2,11 @@ package com.dailyhabittrack.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,7 +55,7 @@ public class HabitController {
 
     @PutMapping("/{habit-id}")
     public ResponseEntity<String> updateHabit(@Valid @PathVariable("habit-id") Long habitId,
-                                               @RequestBody HabitRequest updatedHabit) {
+            @RequestBody HabitRequest updatedHabit) {
         logger.info("Update request for habit id {} with details: {}", habitId, updatedHabit);
         habitService.updateHabit(updatedHabit, habitId);
         logger.info("Habit updated for id: {}", habitId);
@@ -75,4 +77,20 @@ public class HabitController {
         logger.info("Fetched habits for date: {}", date);
         return ResponseEntity.ok(habitList);
     }
+
+    @GetMapping("/daily-progress")
+    public ResponseEntity<Map<String, Map<String, Integer>>> getMonthlyProgressForAllHabits(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        logger.info("Fetching daily progress for date range: {} to {}", startDate, endDate);
+        try {
+            Map<String, Map<String, Integer>> progressData = habitService.getMonthlyProgressForAllHabits(startDate, endDate);
+            logger.info("Fetched daily progress data");
+            return ResponseEntity.ok(progressData);
+        } catch (Exception e) {
+            logger.error("Error fetching data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+    
 }

@@ -7,12 +7,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.dailyhabittrack.constant.enums.HabitResponseMessage;
 import com.dailyhabittrack.entity.Habit;
+import com.dailyhabittrack.entity.HabitEntry;
 import com.dailyhabittrack.exception.HabitException;
 import com.dailyhabittrack.mapper.HabitMapper;
+import com.dailyhabittrack.repository.HabitEntryRepository;
 import com.dailyhabittrack.repository.HabitRepository;
 import com.dailyhabittrack.request.HabitRequest;
 import com.dailyhabittrack.response.HabitResponse;
@@ -24,8 +30,11 @@ public class HabitServiceImpl implements HabitService {
 
     private final HabitRepository habitRepository;
 
-    public HabitServiceImpl(HabitRepository habitRepository) {
+    private final HabitEntryRepository habitEntryRepository;
+
+    public HabitServiceImpl(HabitRepository habitRepository, HabitEntryRepository habitEntryRepository) {
         this.habitRepository = habitRepository;
+        this.habitEntryRepository = habitEntryRepository;
     }
 
     @Override
@@ -38,25 +47,22 @@ public class HabitServiceImpl implements HabitService {
                         HabitResponseMessage.HABIT_ALREADY_ADDED.getMessage(),
                         HttpStatus.CONFLICT.value(),
                         HttpStatus.CONFLICT,
-                        workFlow
-                );
+                        workFlow);
             }
             Habit habit = HabitMapper.INSTANCE.habitRequestToHabit(habitRequest);
             Habit createdHabit = habitRepository.save(habit);
             return HabitMapper.INSTANCE.habitToHabitResponse(createdHabit);
         } catch (HabitException ex) {
-            throw ex; 
+            throw ex;
         } catch (Exception ex) {
             logger.error("Failed to save habit: {}", habitRequest, ex);
             throw new HabitException(
                     HabitResponseMessage.FAILED_TO_SAVE_HABIT.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR.value(),
                     HttpStatus.INTERNAL_SERVER_ERROR,
-                    workFlow
-            );
+                    workFlow);
         }
     }
-    
 
     @Override
     public List<HabitResponse> getAllHabits() {
@@ -125,4 +131,47 @@ public class HabitServiceImpl implements HabitService {
         return HabitMapper.INSTANCE.habitListToHabitResponseList(habits);
     }
 
+    @Override
+    public Map<String, Map<String, Integer>> getMonthlyProgressForAllHabits(LocalDate startDate, LocalDate endDate) {
+        List<HabitEntry> entries = habitEntryRepository.findEntriesByDateRange(startDate, endDate);
+    
+        // Fetch habit names
+        Map<Long, String> habitNames = habitRepository.findAll()
+            .stream()
+            .collect(Collectors.toMap(Habit::getHabitId, Habit::getHabitName));
+    
+        Map<Long, Map<LocalDate, Integer>> habitDailyTotals = new HashMap<>();
+        for (HabitEntry entry : entries) {
+            Long habitId = entry.getHabitId();
+            LocalDate date = entry.getDate();
+            int value = entry.getValue();
+            habitDailyTotals.computeIfAbsent(habitId, k -> new HashMap<>())
+                    .merge(date, value, Integer::sum);
+        }
+    
+        Map<Long, Integer> habitGoals = habitRepository.findAll()
+            .stream()
+            .collect(Collectors.toMap(Habit::getHabitId, Habit::getGoal));
+    
+        Map<String, Map<String, Integer>> result = new LinkedHashMap<>();
+    
+        for (Map.Entry<Long, Map<LocalDate, Integer>> entry : habitDailyTotals.entrySet()) {
+            Long habitId = entry.getKey();
+            Map<LocalDate, Integer> dailyTotals = entry.getValue();
+            int goal = habitGoals.getOrDefault(habitId, 0);
+            String habitName = habitNames.getOrDefault(habitId, "Unknown Habit");
+    
+            Map<String, Integer> habitProgress = new LinkedHashMap<>();
+            for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+                int totalCompleted = dailyTotals.getOrDefault(date, 0);
+                int progress = (int) (((double) totalCompleted / goal) * 100);
+                habitProgress.put(date.toString(), progress);
+            }
+    
+            result.put(habitName, habitProgress);  // Use habitName instead of habitId
+        }
+    
+        return result;
+    }
+    
 }

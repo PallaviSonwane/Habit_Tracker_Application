@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class HabitsHabitEntryJoin {
 
-    private Long habitId; 
+    private Long habitId;
     private String habitName;
     private Integer goal;
     private String unitName;
@@ -21,9 +21,8 @@ public class HabitsHabitEntryJoin {
     private Integer value;
     private LocalDate date;
 
-    // Explicit constructor for the query projection
-    public HabitsHabitEntryJoin(Long habitId, String habitName, Integer goal, String unitName, 
-                                String frequency, LocalDate date, Integer value) {
+    public HabitsHabitEntryJoin(Long habitId, String habitName, Integer goal, String unitName,
+            String frequency, LocalDate date, Integer value) {
         this.habitId = habitId;
         this.habitName = habitName;
         this.goal = goal;

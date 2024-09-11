@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Report Card</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #report-card {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .habit-entry {
+            background-color: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            transition: transform 0.3s ease;
+        }
+        .habit-entry:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .habit-name {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .habit-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .habit-detail {
+            background-color: #e8f4fc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #3498db;
+        }
+        .loading {
+            text-align: center;
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="report-card">
+            <p class="loading">Loading your habit report...</p>
+        </div>
+    </div>
+    <script>
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        const date = getQueryParam('date');
+        const reportCard = document.getElementById('report-card');
+
+        fetch(`http://localhost:8080/api/habit-entries/${date}`)
+            .then(response => response.json())
+            .then(data => {
+                let reportContent = `<h2>Habit Report for ${date}</h2>`;
+                data.forEach(entry => {
+                    reportContent += `
+                        <div class="habit-entry">
+                            <div class="habit-name">${entry.habitName}</div>
+                            <div class="habit-details">
+                                <div class="habit-detail">
+                                    <span class="detail-label">Goal:</span> ${entry.goal}
+                                </div>
+                                <div class="habit-detail">
+                                    <span class="detail-label">Unit:</span> ${entry.unitName}
+                                </div>
+                                <div class="habit-detail">
+                                    <span class="detail-label">Frequency:</span> ${entry.frequency}
+                                </div>
+                                <div class="habit-detail">
+                                    <span class="detail-label">Goal Achieved:</span> ${entry.value} ${entry.unitName}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                reportCard.innerHTML = reportContent;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                reportCard.innerHTML = '<p>Error loading report. Please try again later.</p>';
+            });
+    </script>
+</body>
+</html>

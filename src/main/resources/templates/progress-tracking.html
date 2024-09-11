@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Progress Chart</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        #chartContainer {
+            width: 100%;
+            height: 90%;
+        }
+        #backButton {
+            display: none;
+            margin: 10px;
+        }
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button id="backButton">Back to Yearly View</button>
+    <div id="chartContainer">
+        <canvas id="habitChart"></canvas>
+    </div>
+
+    <!-- Modal -->
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        let habitChart;
+        let currentView = 'yearly';
+        let yearlyData;
+        
+        // Get modal element and close button
+        const modal = document.getElementById('errorModal');
+        const closeModal = document.querySelector('.close');
+
+        function createChart(data, type = 'yearly') {
+            const ctx = document.getElementById('habitChart').getContext('2d');
+            
+            if (habitChart) {
+                habitChart.destroy();
+            }
+
+            habitChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: type === 'yearly' ? 'Yearly Habit Progress' : 'Monthly Habit Progress'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Progress (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: type === 'yearly' ? 'Month' : 'Date'
+                            }
+                        }
+                    },
+                    onClick: type === 'yearly' ? handleChartClick : null
+                }
+            });
+        }
+
+        function handleChartClick(event, elements) {
+            if (elements.length > 0) {
+                const index = elements[0].index;
+                fetchMonthData(index);
+            }
+        }
+
+        function fetchMonthData(monthIndex) {
+            const year = new Date().getFullYear();
+            const month = monthIndex + 1; // Adding 1 because monthIndex is 0-based
+            const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+            
+            console.log(`Fetching data for month ${month} (${startDate} to ${endDate})`); // Debugging
+
+            fetch(`http://localhost:8080/api/habit/daily-progress?startDate=${startDate}&endDate=${endDate}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data || Object.keys(data).length === 0) {
+                        showError('No data available for the selected month.');
+                        return;
+                    }
+                    const chartData = parseProgressData(data, false); // false for monthly data
+                    createChart(chartData, 'monthly');
+                    currentView = 'monthly';
+                    document.getElementById('backButton').style.display = 'block';
+                })
+                .catch(error => {
+                    if (error.message.includes('Network response was not ok.')) {
+                        showError('Unable to fetch data from the server. Please try again later.');
+                    } else {
+                        showError('An unexpected error occurred. Please try again later.');
+                    }
+                    console.error('Error fetching monthly data:', error);
+                });
+        }
+
+        function fetchYearlyData() {
+            const year = new Date().getFullYear();
+            const startDate = `${year}-01-01`;
+            const endDate = `${year}-12-31`;
+            
+            fetch(`http://localhost:8080/api/habit/daily-progress?startDate=${startDate}&endDate=${endDate}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    yearlyData = parseProgressData(data, true); // true for yearly data
+                    createChart(yearlyData);
+                })
+                .catch(error => {
+                    if (error.message.includes('Network response was not ok.')) {
+                        showError('Unable to fetch yearly data from the server. Please try again later.');
+                    } else {
+                        showError('An unexpected error occurred. Please try again later.');
+                    }
+                    console.error('Error fetching yearly data:', error);
+                });
+        }
+
+            function parseProgressData(data, isYearly = false) {
+            const habitNames = Object.keys(data);  // Habit names are now the keys
+            const dates = Object.keys(data[habitNames[0]]);
+            
+            const labels = isYearly
+                ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                : dates;
+
+            const datasets = habitNames.map((habitName, index) => {
+                const dataPoints = labels.map(date => data[habitName][date] || 0);
+                return {
+                    label: habitName,  // Use habit name here
+                    data: dataPoints,
+                    borderColor: `hsl(${index * 137.508},50%,50%)`,
+                    tension: 0.1
+                };
+            });
+
+            return { labels, datasets };
+        }
+
+
+        function showError(message) {
+            document.getElementById('errorMessage').innerText = message;
+            modal.style.display = 'block';
+        }
+
+        // Close modal when clicking on <span> (x)
+        closeModal.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking anywhere outside of the modal
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        document.getElementById('backButton').addEventListener('click', () => {
+            createChart(yearlyData);
+            currentView = 'yearly';
+            document.getElementById('backButton').style.display = 'none';
+            modal.style.display = 'none'; // Hide modal if it's open
+        });
+
+        window.onload = fetchYearlyData;
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Daily Report Card Calendar</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .calendar-header button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #current-month {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+        }
+        .day {
+            background-color: #eee;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .day:hover {
+            background-color: #ddd;
+        }
+        .selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .day.empty {
+            background-color: transparent;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Monthly Report Card Calendar</h1>
+        <div class="calendar-header">
+            <button id="prev-month">&lt; Prev</button>
+            <span id="current-month"></span>
+            <button id="next-month">Next &gt;</button>
+        </div>
+        <div id="calendar"></div>
+    </div>
+
+    <script>
+        const calendar = document.getElementById('calendar');
+        const currentMonthElement = document.getElementById('current-month');
+        const prevMonthButton = document.getElementById('prev-month');
+        const nextMonthButton = document.getElementById('next-month');
+
+        let currentDate = moment();
+        let selectedDate = null;
+
+        function generateCalendar(date) {
+            calendar.innerHTML = '';
+            currentMonthElement.textContent = date.format('MMMM YYYY');
+
+            const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            daysOfWeek.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.classList.add('day-header');
+                dayHeader.textContent = day;
+                calendar.appendChild(dayHeader);
+            });
+
+            const startOfMonth = date.clone().startOf('month');
+            const endOfMonth = date.clone().endOf('month');
+
+            for (let i = 0; i < startOfMonth.day(); i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.classList.add('day', 'empty');
+                calendar.appendChild(emptyDay);
+            }
+
+            for (let day = 1; day <= endOfMonth.date(); day++) {
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('day');
+                dayElement.textContent = day;
+                dayElement.setAttribute('data-date', moment([date.year(), date.month(), day]).format('YYYY-MM-DD'));
+                dayElement.addEventListener('click', selectDate);
+                calendar.appendChild(dayElement);
+            }
+        }
+
+        function selectDate(event) {
+            const selectedDay = event.target;
+            const date = selectedDay.getAttribute('data-date');
+
+            if (selectedDate) {
+                selectedDate.classList.remove('selected');
+            }
+
+            selectedDay.classList.add('selected');
+            selectedDate = selectedDay;
+
+            // Redirect to report page with selected date
+            window.location.href = `report.html?date=${date}`;
+        }
+
+        prevMonthButton.addEventListener('click', () => {
+            currentDate = currentDate.subtract(1, 'month');
+            generateCalendar(currentDate);
+        });
+
+        nextMonthButton.addEventListener('click', () => {
+            currentDate = currentDate.add(1, 'month');
+            generateCalendar(currentDate);
+        });
+
+        generateCalendar(currentDate);
+    </script>
+</body>
+</html>

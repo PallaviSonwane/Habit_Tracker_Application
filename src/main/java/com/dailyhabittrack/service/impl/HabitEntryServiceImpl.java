@@ -1,11 +1,13 @@
 package com.dailyhabittrack.service.impl;
 
 import com.dailyhabittrack.constant.enums.HabitEntryResponseMessage;
+import com.dailyhabittrack.entity.Habit;
 import com.dailyhabittrack.entity.HabitEntry;
 import com.dailyhabittrack.entity.HabitsHabitEntryJoin;
 import com.dailyhabittrack.exception.HabitException;
 import com.dailyhabittrack.mapper.HabitEntryMapper;
 import com.dailyhabittrack.repository.HabitEntryRepository;
+import com.dailyhabittrack.repository.HabitRepository;
 import com.dailyhabittrack.request.HabitEntryRequest;
 import com.dailyhabittrack.response.HabitEntryResponse;
 import com.dailyhabittrack.service.HabitEntryService;
@@ -16,25 +18,31 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
 public class HabitEntryServiceImpl implements HabitEntryService {
 
-    private static final Logger logger = LoggerFactory.getLogger(HabitEntryServiceImpl.class);
+    private final Logger logger = LoggerFactory.getLogger(HabitEntryServiceImpl.class);
 
     private final HabitEntryRepository habitEntryRepository;
 
-    public HabitEntryServiceImpl(HabitEntryRepository habitEntryRepository) {
+    private final HabitRepository habitRepository;
+
+    public HabitEntryServiceImpl(HabitEntryRepository habitEntryRepository, HabitRepository habitRepository) {
         this.habitEntryRepository = habitEntryRepository;
+        this.habitRepository = habitRepository;
     }
 
     @Override
     public HabitEntryResponse createHabitEntry(HabitEntryRequest request) {
         try {
             HabitEntry habitEntry = HabitEntryMapper.INSTANCE.habitEntryRequestToEntity(request);
-            boolean entryExists = habitEntryRepository.existsByHabitIdAndDate(habitEntry.getHabitId(), habitEntry.getDate());
+            boolean entryExists = habitEntryRepository.existsByHabitIdAndDate(habitEntry.getHabitId(),
+                    habitEntry.getDate());
 
             if (entryExists) {
                 logger.info("Habit entry already exist");
@@ -86,8 +94,9 @@ public class HabitEntryServiceImpl implements HabitEntryService {
     @Override
     public HabitEntryResponse updateHabitValue(HabitEntryRequest updEntryRequest) {
         HabitEntry habitEntry = HabitEntryMapper.INSTANCE.habitEntryRequestToEntity(updEntryRequest);
-        HabitEntry entryExists = habitEntryRepository.findByHabitIdAndDate(habitEntry.getHabitId(), habitEntry.getDate());
-        if (entryExists!=null) {
+        HabitEntry entryExists = habitEntryRepository.findByHabitIdAndDate(habitEntry.getHabitId(),
+                habitEntry.getDate());
+        if (entryExists != null) {
             habitEntry.setEntryId(entryExists.getEntryId());
             habitEntry.setDate(entryExists.getDate());
             habitEntry.setHabitId(entryExists.getHabitId());
@@ -107,4 +116,33 @@ public class HabitEntryServiceImpl implements HabitEntryService {
     public List<HabitsHabitEntryJoin> getHabitEntriesByHabitId(Long habitId) {
         return habitEntryRepository.findHabitEntriesByHabitId(habitId);
     }
+
+    @Override
+    public List<HabitsHabitEntryJoin> getHabitEntriesByDate(LocalDate date) {
+        List<HabitEntry> habitEntriesList = habitEntryRepository.findByDate(date);
+        List<HabitsHabitEntryJoin> habitJoinList = new ArrayList<>();
+
+        for (HabitEntry habitEntry : habitEntriesList) {
+            Habit habit = habitRepository.findById(habitEntry.getHabitId()).orElse(null);
+
+            if (habit != null) {
+                HabitsHabitEntryJoin joinData = new HabitsHabitEntryJoin(
+                        habit.getHabitId(),
+                        habit.getHabitName(),
+                        habit.getGoal(),
+                        habit.getUnitName(),
+                        habit.getFrequency(),
+                        habitEntry.getDate(),
+                        habitEntry.getValue());
+                habitJoinList.add(joinData);
+            }
+        }
+        return habitJoinList;
+    }
+
+    // @Override
+    // public HabitsHabitEntryJoin getHabitEntriesByDateAndHabitId(LocalDate date, Long habitId) {
+    //     HabitsHabitEntryJoin habitEntryJoin = habitEntryRepository.findByHabitIdAndDate(habitId, date);
+    //     return habitEntryJoin;
+    // }
 }

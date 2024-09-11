@@ -49,7 +49,4 @@ public class Habit {
     @NotNull
     @Column(name = "date", nullable = false)
     private LocalDate date; 
-
-    // @Builder.Default
-    // private boolean deleted = Boolean.FALSE;
 }
